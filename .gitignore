@@ -1,5 +1,6 @@
 ### Project
 build/
+resources/
 
 ### Vim
 ### Source: https://github.com/github/gitignore/blob/master/Global/Vim.gitignore
