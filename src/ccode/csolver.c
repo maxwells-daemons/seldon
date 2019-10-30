@@ -9,7 +9,7 @@
 
 // When enabled, uses "winner gets empties" scoring and tries to maximize score.
 // Comment out in practice for speed.
-#define BENCHMARK
+/* #define BENCHMARK */
 
 #ifdef BENCHMARK
 #define INITIAL_BOUND MAX_SCORE
