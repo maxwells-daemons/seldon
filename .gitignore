@@ -1,6 +1,7 @@
 ### Project
 build/
 resources/
+src/ccode/backend.c
 
 ### Vim
 ### Source: https://github.com/github/gitignore/blob/master/Global/Vim.gitignore
