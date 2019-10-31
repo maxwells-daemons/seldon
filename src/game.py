@@ -11,35 +11,51 @@ BOARD_SIZE = 8
 BOARD_SHAPE = (BOARD_SIZE, BOARD_SIZE)
 
 
+# NOTE: values align between these enums to allow comparison
+class GameOutcome(Enum):
+    BLACK_WINS = "black"
+    WHITE_WINS = "white"
+    DRAW = auto()
+
+
 class PlayerColor(Enum):
-    BLACK = "black"  # Values align with Board tuple names to allow getting pieces
+    BLACK = "black"
     WHITE = "white"
 
     def opponent(self):
-        if self == PlayerColor.WHITE:
-            return PlayerColor.BLACK
-        return PlayerColor.WHITE
+        if self == PlayerColor.BLACK:
+            return PlayerColor.WHITE
+        return PlayerColor.BLACK
 
-
-class Move(NamedTuple):
-    x: int
-    y: int
-
-    def __repr__(self) -> str:
-        return ascii_lowercase[self.x] + str(self.y + 1)
-
-    def __lt__(self, other):
-        return self.x < other.x or self.y < other.y
+    def winning_outcome(self) -> GameOutcome:
+        if self == PlayerColor.BLACK:
+            return GameOutcome.BLACK_WINS
+        return GameOutcome.WHITE_WINS
 
 
 class Board(NamedTuple):
     black: np.ndarray
     white: np.ndarray
 
-    def for_side(self, player: PlayerColor) -> Tuple[np.ndarray, np.ndarray]:
-        player_board = self.__getattribute__(player.value)
-        opponent_board = self.__getattribute__(player.opponent().value)
-        return player_board, opponent_board
+    def player_view(self, player: PlayerColor) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Retrieve (my board, opponent board) tuple.
+        """
+        if player == PlayerColor.BLACK:
+            return self.black, self.white
+        return self.white, self.black
+
+    def player_has_moves(self, player: PlayerColor) -> bool:
+        return find_moves(*self.player_view(player)).any()
+
+    def winning_player(self) -> GameOutcome:
+        black_score = np.count_nonzero(self.black)
+        white_score = np.count_nonzero(self.white)
+        if black_score > white_score:
+            return GameOutcome.BLACK_WINS
+        if white_score > black_score:
+            return GameOutcome.WHITE_WINS
+        return GameOutcome.DRAW
 
     def _string_array(self) -> np.ndarray:
         board = np.tile(" ", (BOARD_SIZE + 1, BOARD_SIZE + 1))
@@ -54,16 +70,15 @@ class Board(NamedTuple):
         return np.array2string(self._string_array(), formatter={"numpystr": str})
 
 
-class GameOutcome(Enum):
-    BLACK_WINS = "black"  # Values align with PlayerColor to compare
-    WHITE_WINS = "white"
-    DRAW = auto()
+class Move(NamedTuple):
+    x: int
+    y: int
 
+    def __repr__(self) -> str:
+        return ascii_lowercase[self.x] + str(self.y + 1)
 
-def player_wins(player: PlayerColor) -> GameOutcome:
-    if player == PlayerColor.BLACK:
-        return GameOutcome.BLACK_WINS
-    return GameOutcome.WHITE_WINS
+    def __lt__(self, other):
+        return self.x < other.x or self.y < other.y
 
 
 class PlayerABC(ABC):
@@ -114,22 +129,8 @@ def starting_board() -> Board:
     return Board(black, white)
 
 
-def player_has_moves(player_board: Board, opp_board: Board) -> bool:
-    return find_moves(player_board, opp_board).any()
-
-
-def winning_player(board: Board) -> GameOutcome:
-    black_score = np.count_nonzero(board.black)
-    white_score = np.count_nonzero(board.white)
-    if black_score > white_score:
-        return GameOutcome.BLACK_WINS
-    if white_score > black_score:
-        return GameOutcome.WHITE_WINS
-    return GameOutcome.DRAW
-
-
 def player_make_move(board: Board, move: Move, player: PlayerColor) -> Board:
-    player_board, opponent_board = board.for_side(player)
+    player_board, opponent_board = board.player_view(player)
     new_player_board, new_opponent_board = resolve_move(
         player_board, opponent_board, move.x, move.y
     )
@@ -171,21 +172,18 @@ def play_game_from_state(
     just_passed: bool = False
 
     while True:
-        player_board, opponent_board = board.for_side(current_player)
-
-        if not player_has_moves(player_board, opponent_board):
+        if board.player_has_moves(current_player):
+            just_passed = False
+            player_board, opponent_board = board.player_view(current_player)
+            move = players[current_player].get_move(player_board, opponent_board)
+            board = player_make_move(board, move, current_player)
+        else:
             if just_passed:
                 break  # Both players pass: game ends
             just_passed = True
-            current_player = current_player.opponent()
-            continue
-
-        just_passed = False
-        move = players[current_player].get_move(player_board, opponent_board)
-        board = player_make_move(board, move, current_player)
         current_player = current_player.opponent()
 
-    return winning_player(board)
+    return board.winning_player()
 
 
 def play_game(black: Type[PlayerABC], white: Type[PlayerABC]) -> GameOutcome:
