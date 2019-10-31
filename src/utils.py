@@ -1,4 +1,5 @@
-from typing import List, Type
+from functools import wraps
+from typing import Callable, List, Type
 
 import numpy as np  # type: ignore
 
@@ -13,40 +14,31 @@ def moves_list(bitboard: np.ndarray) -> List[Move]:
     return [Move(x, y) for y, x in np.argwhere(bitboard)]
 
 
-def player_with_solver(player: Type[PlayerABC], depth: int) -> Type[PlayerABC]:
+def with_solver(depth: int) -> Callable[[Type[PlayerABC]], Type[PlayerABC]]:
     """
     Wrap a player such that after few enough spots are left empty, moves are made
     with the endgame solver.
-
-    Parameters
-    ----------
-    player : PlayerABC constructor
-        The player wrapped.
-    depth : int
-        Depth at which the endgame solver operates.
-
-    Returns
-    -------
-    PlayerABC constructor
-        A constructor for a new player class which acts like the original class, but
-        using the endgame solver for late moves.
     """
 
-    class PlayerWithSolver(PlayerABC):
-        def __init__(self, color: PlayerColor) -> None:
-            self.player = player(color)
+    def decorator(player_constructor: Type[PlayerABC]) -> Type[PlayerABC]:
+        class PlayerWithSolver(PlayerABC):
+            @wraps(player_constructor)
+            def __init__(self, color: PlayerColor) -> None:
+                self.player = player_constructor(color)
 
-        def get_move(self, player: np.ndarray, opponent: np.ndarray) -> Move:
-            empties = (
-                BOARD_SIZE * BOARD_SIZE
-                - np.count_nonzero(player)
-                - np.count_nonzero(opponent)
-            )
+            def get_move(self, player: np.ndarray, opponent: np.ndarray) -> Move:
+                empties = (
+                    BOARD_SIZE * BOARD_SIZE
+                    - np.count_nonzero(player)
+                    - np.count_nonzero(opponent)
+                )
 
-            if empties <= depth:
-                x, y, _ = solve_game(player, opponent)
-                return Move(x, y)
+                if empties <= depth:
+                    x, y, _ = solve_game(player, opponent)
+                    return Move(x, y)
 
-            return self.player.get_move(player, opponent)
+                return self.player.get_move(player, opponent)
 
-    return PlayerWithSolver
+        return PlayerWithSolver
+
+    return decorator
