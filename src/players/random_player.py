@@ -2,7 +2,7 @@ from random import choice
 
 import numpy as np  # type: ignore
 
-from backend import find_moves  # type: ignore
+from bitboard import find_moves  # type: ignore
 from game import Move, PlayerABC
 from utils import moves_list
 

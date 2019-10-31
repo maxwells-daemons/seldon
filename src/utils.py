@@ -2,8 +2,8 @@ from typing import List, Type
 
 import numpy as np  # type: ignore
 
-from backend import solve_game  # type: ignore
 from game import BOARD_SIZE, Move, PlayerABC, PlayerColor
+from solver import solve_game  # type: ignore
 
 
 def moves_list(bitboard: np.ndarray) -> List[Move]:

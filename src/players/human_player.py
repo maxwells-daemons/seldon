@@ -2,7 +2,7 @@ from string import ascii_lowercase
 
 import numpy as np  # type: ignore
 
-from backend import find_moves  # type: ignore
+from bitboard import find_moves  # type: ignore
 from game import BOARD_SIZE, Board, Move, PlayerABC
 from utils import moves_list
 

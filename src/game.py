@@ -5,7 +5,7 @@ from typing import Dict, NamedTuple, Tuple, Type
 
 import numpy as np  # type: ignore
 
-from backend import find_moves, resolve_move  # type: ignore
+from bitboard import find_moves, resolve_move  # type: ignore
 
 BOARD_SIZE = 8
 BOARD_SHAPE = (BOARD_SIZE, BOARD_SIZE)
@@ -58,6 +58,12 @@ class GameOutcome(Enum):
     BLACK_WINS = "black"  # Values align with PlayerColor to compare
     WHITE_WINS = "white"
     DRAW = auto()
+
+
+def player_wins(player: PlayerColor) -> GameOutcome:
+    if player == PlayerColor.BLACK:
+        return GameOutcome.BLACK_WINS
+    return GameOutcome.WHITE_WINS
 
 
 class PlayerABC(ABC):
@@ -174,6 +180,7 @@ def play_game_from_state(
             current_player = current_player.opponent()
             continue
 
+        just_passed = False
         move = players[current_player].get_move(player_board, opponent_board)
         board = player_make_move(board, move, current_player)
         current_player = current_player.opponent()
