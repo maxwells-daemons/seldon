@@ -11,4 +11,4 @@ uint64_t c_resolve_move(uint64_t player, uint64_t opp, uint64_t new_disk);
 uint64_t c_make_singleton_bitboard(unsigned int x, unsigned int y);
 uint64_t c_find_moves(uint64_t player, uint64_t opp);
 uint64_t c_stability(uint64_t player, uint64_t opp);
-void print_board(uint64_t white, uint64_t black);
+unsigned int c_select_bit(uint64_t bitboard, unsigned int rank);

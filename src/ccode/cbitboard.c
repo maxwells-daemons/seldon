@@ -168,25 +168,6 @@ uint64_t c_make_singleton_bitboard(unsigned int x, unsigned int y) {
     return 1ULL << ((7 - y) * 8 + (7 - x));
 }
 
-void print_board(uint64_t white, uint64_t black) {
-    uint64_t mask;
-    for (int y = 0; y < 8; y++) {
-        for (int x = 0; x < 8; x++) {
-            mask = 1ULL << ((7-y) * 8 + (7-x));
-
-            if (mask & white) {
-                printf("O");
-            } else if (mask & black) {
-                printf("X");
-            } else {
-                printf("-");
-            }
-        }
-        printf("\n");
-    }
-}
-
-
 /*
  * Top-level bitboard operations
  */
@@ -261,4 +242,35 @@ uint64_t c_stability(uint64_t player, uint64_t opp) {
     }
 
     return stb;
+}
+
+// Source: http://graphics.stanford.edu/~seander/bithacks.html#SelectPosFromMSBRank
+unsigned int c_select_bit(uint64_t bitboard, unsigned int rank) {
+  unsigned int s;      // Output: Resulting position of bit with rank r [1-64]
+  uint64_t a, b, c, d; // Intermediate temporaries for bit count.
+  unsigned int t;      // Bit count temporary.
+
+  // Do a normal parallel bit count for a 64-bit integer,
+  // but store all intermediate steps.
+  a =  bitboard - ((bitboard >> 1) & ~0UL/3);
+  b = (a & ~0UL/5) + ((a >> 2) & ~0UL/5);
+  c = (b + (b >> 4)) & ~0UL/0x11;
+  d = (c + (c >> 8)) & ~0UL/0x101;
+  t = (d >> 32) + (d >> 48);
+
+  // Now do branchless select!
+  s  = 64;
+  s -= ((t - rank) & 256) >> 3; rank -= (t & ((t - rank) >> 8));
+  t  = (d >> (s - 16)) & 0xff;
+  s -= ((t - rank) & 256) >> 4; rank -= (t & ((t - rank) >> 8));
+  t  = (c >> (s - 8)) & 0xf;
+  s -= ((t - rank) & 256) >> 5; rank -= (t & ((t - rank) >> 8));
+  t  = (b >> (s - 4)) & 0x7;
+  s -= ((t - rank) & 256) >> 6; rank -= (t & ((t - rank) >> 8));
+  t  = (a >> (s - 2)) & 0x3;
+  s -= ((t - rank) & 256) >> 7; rank -= (t & ((t - rank) >> 8));
+  t  = (bitboard >> (s - 1)) & 0x1;
+  s -= ((t - rank) & 256) >> 8;
+
+  return s;
 }

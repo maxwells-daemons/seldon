@@ -1,8 +1,6 @@
 # cython: language_level=3, boundscheck=False, wraparound=False
 import numpy as np
 cimport numpy as np
-from backend cimport (c_popcount_64, c_resolve_move, c_make_singleton_bitboard,
-                      c_find_moves, c_stability, _move, move, c_solve_game)
 
 # C ULL <-> ndarray interface
 cpdef Bitboard _serialize(np.ndarray arr):
@@ -83,25 +81,3 @@ cpdef np.ndarray stability(np.ndarray player, np.ndarray opp):
         Board of the active player's stable disks.
     '''
     return _deserialize(c_stability(_serialize(player), _serialize(opp)))
-
-def solve_game(np.ndarray player, np.ndarray opp):
-    '''
-    Solve a board with the explicit endgame solver, returning the best next move.
-
-    Parameters
-    ----------
-    player : bool ndarray
-        Active player's board.
-    opp : bool ndarray
-        Opponent's board.
-
-    Returns
-    -------
-    x : int
-    y : int
-        Coordinates of the best move on this board.
-    score : int
-        Expected final score.
-    '''
-    cdef move c_move = c_solve_game(_serialize(player), _serialize(opp))
-    return (7 - c_move.x, 7 - c_move.y, c_move.score)
