@@ -1,4 +1,5 @@
 from random import choice
+from typing import Optional
 
 import numpy as np  # type: ignore
 
@@ -8,7 +9,13 @@ from utils import moves_list
 
 
 class RandomPlayer(PlayerABC):
-    def get_move(self, player_board: np.ndarray, opponent_board: np.ndarray) -> Move:
+    def get_move(
+        self,
+        player_board: np.ndarray,
+        opponent_board: np.ndarray,
+        opponent_move: Optional[Move],
+        ms_left: Optional[int],
+    ) -> Move:
         moves_bitboard = find_moves(player_board, opponent_board)
         all_moves = moves_list(moves_bitboard)
         return choice(all_moves)

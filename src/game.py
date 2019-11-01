@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from string import ascii_lowercase
-from typing import Dict, NamedTuple, Tuple, Type
+from time import time
+from typing import Dict, NamedTuple, Optional, Tuple, Type, cast
 
 import numpy as np  # type: ignore
 
@@ -100,7 +101,13 @@ class PlayerABC(ABC):
         self.color: PlayerColor = color
 
     @abstractmethod
-    def get_move(self, player_board: np.ndarray, opponent_board: np.ndarray) -> Move:
+    def get_move(
+        self,
+        player_board: np.ndarray,
+        opponent_board: np.ndarray,
+        opponent_move: Optional[Move],
+        ms_left: Optional[int],
+    ) -> Move:
         """
         Get this player's next move.
 
@@ -112,6 +119,12 @@ class PlayerABC(ABC):
             A bitboard of this player's pieces.
         opponent_board : ndarray
             A bitboard of the opponent's pieces.
+        opponent_move : Move or None
+            Opponent's last move, if applicable. If this is the first move of the game
+            or the opponent passed, this will be None.
+        ms_left : int or None
+            Milliseconds left in this bot's time budget.
+            If None, unlimited time is available.
 
         Returns
         -------
@@ -144,6 +157,8 @@ def play_game_from_state(
     current_player: PlayerColor,
     black: Type[PlayerABC],
     white: Type[PlayerABC],
+    black_time: Optional[int],
+    white_time: Optional[int],
 ) -> GameOutcome:
     """
     Play a game of Othello between two players, starting from a given state.
@@ -158,6 +173,12 @@ def play_game_from_state(
         Player class for the black player.
     white : PlayerABC constructor
         Player class for the white player.
+    black_time : int or None
+        Milliseconds left in the black bot's time budget.
+        If None, unlimited time is available.
+    white_time : int or None
+        Milliseconds left in the white bot's time budget.
+        If None, unlimited time is available.
 
     Returns
     -------
@@ -169,24 +190,45 @@ def play_game_from_state(
         PlayerColor.BLACK: black(PlayerColor.BLACK),
         PlayerColor.WHITE: white(PlayerColor.WHITE),
     }
+    times: Dict[PlayerColor, Optional[int]] = {
+        PlayerColor.BLACK: black_time,
+        PlayerColor.WHITE: white_time,
+    }
     just_passed: bool = False
+    last_move: Optional[Move] = None
 
     while True:
         if board.player_has_moves(current_player):
             just_passed = False
             player_board, opponent_board = board.player_view(current_player)
-            move = players[current_player].get_move(player_board, opponent_board)
+
+            t1 = time()
+            move = players[current_player].get_move(
+                player_board, opponent_board, last_move, times[current_player]
+            )
+            t2 = time()
+
+            last_move = move
             board = player_make_move(board, move, current_player)
+
+            if times[current_player] is not None:
+                times[current_player] -= int((t2 - t1) * 1000)  # type: ignore
+                if times[current_player] < 0:  # type: ignore
+                    print(f"Player {current_player} timed out.")
+                    return current_player.opponent().winning_outcome()
         else:
             if just_passed:
                 break  # Both players pass: game ends
             just_passed = True
+            last_move = None
         current_player = current_player.opponent()
 
     return board.winning_player()
 
 
-def play_game(black: Type[PlayerABC], white: Type[PlayerABC]) -> GameOutcome:
+def play_game(
+    black: Type[PlayerABC], white: Type[PlayerABC], max_time: Optional[int] = None
+) -> GameOutcome:
     """
     Play a complete game of Othello between two players.
 
@@ -196,10 +238,15 @@ def play_game(black: Type[PlayerABC], white: Type[PlayerABC]) -> GameOutcome:
         Player class for the black player.
     white : PlayerABC constructor
         Player class for the white player.
+    max_time : int or None
+        Maximum number of milliseconds to allow each bot to compute for.
+        If None, unlimited time is available.
 
     Returns
     -------
     GameOutcome
         The outcome of the game.
     """
-    return play_game_from_state(starting_board(), PlayerColor.BLACK, black, white)
+    return play_game_from_state(
+        starting_board(), PlayerColor.BLACK, black, white, max_time, max_time
+    )

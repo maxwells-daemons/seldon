@@ -1,4 +1,5 @@
 from string import ascii_lowercase
+from typing import Optional
 
 import numpy as np  # type: ignore
 
@@ -15,7 +16,13 @@ def _parse_input(input_: str) -> Move:
 
 
 class HumanPlayer(PlayerABC):
-    def get_move(self, player_board: np.ndarray, opponent_board: np.ndarray) -> Move:
+    def get_move(
+        self,
+        player_board: np.ndarray,
+        opponent_board: np.ndarray,
+        opponent_move: Optional[Move],
+        ms_left: Optional[int],
+    ) -> Move:
         moves_bitboard = find_moves(player_board, opponent_board)
         all_moves = list(sorted(moves_list(moves_bitboard)))
         board = Board(

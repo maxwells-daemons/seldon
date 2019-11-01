@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable, List, Type
+from typing import Callable, List, Optional, Type
 
 import numpy as np  # type: ignore
 
@@ -26,18 +26,26 @@ def with_solver(depth: int) -> Callable[[Type[PlayerABC]], Type[PlayerABC]]:
             def __init__(self, color: PlayerColor) -> None:
                 self.player = player_constructor(color)
 
-            def get_move(self, player: np.ndarray, opponent: np.ndarray) -> Move:
+            def get_move(
+                self,
+                player_board: np.ndarray,
+                opponent_board: np.ndarray,
+                opponent_move: Optional[Move],
+                ms_left: Optional[int],
+            ) -> Move:
                 empties = (
                     BOARD_SIZE * BOARD_SIZE
-                    - np.count_nonzero(player)
-                    - np.count_nonzero(opponent)
+                    - np.count_nonzero(player_board)
+                    - np.count_nonzero(opponent_board)
                 )
 
                 if empties <= depth:
-                    x, y, _ = solve_game(player, opponent)
+                    x, y, _ = solve_game(player_board, opponent_board)
                     return Move(x, y)
 
-                return self.player.get_move(player, opponent)
+                return self.player.get_move(
+                    player_board, opponent_board, opponent_move, ms_left
+                )
 
         return PlayerWithSolver
 

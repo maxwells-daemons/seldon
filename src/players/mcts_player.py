@@ -1,5 +1,5 @@
 from math import log, sqrt
-from typing import List
+from typing import List, Optional
 
 import numpy as np  # type: ignore
 
@@ -92,7 +92,14 @@ class MCTSPlayer(PlayerABC):
         )
         super().__init__(color)
 
-    def get_move(self, player_board: np.ndarray, opponent_board: np.ndarray) -> Move:
+    # TODO: use opponent move
+    def get_move(
+        self,
+        player_board: np.ndarray,
+        opponent_board: np.ndarray,
+        opponent_move: Optional[Move],
+        ms_left: Optional[int],
+    ) -> Move:
         # Our opponent has moved down the search tree by 1
         for node in self._search_tree.explored:
             player_board_, opponent_board_ = node.board.player_view(self.color)
