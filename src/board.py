@@ -6,6 +6,10 @@ and not the wrapped C functions.
 
 Attributes
 ----------
+PlayerColor : Enum
+    A player's color.
+GameOutcome : Enum
+    The outcome of an Othello game.
 Loc : NamedTuple
     A pretty-printed and named (x, y) tuple representing a location on the board.
 Bitboard : class
@@ -14,6 +18,7 @@ Board : class
     A complete Othello board.
 """
 
+from enum import Enum, auto
 from string import ascii_lowercase
 from typing import List, NamedTuple, Tuple
 
@@ -21,17 +26,49 @@ import numpy as np  # type: ignore
 
 from bitboard import (  # type: ignore
     bitboard_find_moves,
-    bitboard_resolve_move,
     bitboard_stability,
     deserialize_piecearray,
     make_singleton_bitboard,
     popcount,
+    resolve_move,
     serialize_piecearray,
 )
-from player import PlayerColor
 
 BOARD_SIZE = 8
 BOARD_SHAPE = (BOARD_SIZE, BOARD_SIZE)
+BOARD_SQUARES = BOARD_SIZE * BOARD_SIZE
+
+
+# NOTE: values align between these two enums to allow comparison
+class GameOutcome(Enum):
+    BLACK_WINS = "black"
+    WHITE_WINS = "white"
+    DRAW = auto()
+
+    @property
+    def opponent(self) -> "GameOutcome":
+        if self == GameOutcome.BLACK_WINS:
+            return GameOutcome.WHITE_WINS
+        if self == GameOutcome.WHITE_WINS:
+            return GameOutcome.BLACK_WINS
+        return GameOutcome.DRAW
+
+
+class PlayerColor(Enum):
+    BLACK = "black"
+    WHITE = "white"
+
+    @property
+    def opponent(self) -> "PlayerColor":
+        if self == PlayerColor.BLACK:
+            return PlayerColor.WHITE
+        return PlayerColor.BLACK
+
+    @property
+    def winning_outcome(self) -> GameOutcome:
+        if self == PlayerColor.BLACK:
+            return GameOutcome.BLACK_WINS
+        return GameOutcome.WHITE_WINS
 
 
 class Loc(NamedTuple):
@@ -91,7 +128,7 @@ class Board(NamedTuple):
 
     @staticmethod
     def starting_board() -> "Board":
-        return Board(Bitboard(34628173824), Bitboard(68853694464))
+        return Board(Bitboard(0x0000000810000000), Bitboard(0x0000001008000000))
 
     def player_view(self, player: PlayerColor) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -101,12 +138,14 @@ class Board(NamedTuple):
             return self.black, self.white
         return self.white, self.black
 
-    def resolve_move(self, player: PlayerColor, move: Loc) -> "Board":
+    def resolve_move(self, move: Loc, player: PlayerColor) -> "Board":
         player_board, opponent_board = self.player_view(player)
-        new_player_board, new_opponent_board = bitboard_resolve_move(
+        new_player_board, new_opponent_board = resolve_move(
             player_board, opponent_board, move.x, move.y
         )
-        return Board.from_player_view(new_player_board, new_opponent_board, player)
+        return Board.from_player_view(
+            Bitboard(new_player_board), Bitboard(new_opponent_board), player
+        )
 
     def find_moves(self, player: PlayerColor) -> Bitboard:
         player_board, opponent_board = self.player_view(player)
@@ -118,6 +157,16 @@ class Board(NamedTuple):
     def find_stability(self, player: PlayerColor) -> Bitboard:
         player_board, opponent_board = self.player_view(player)
         return Bitboard(bitboard_stability(player_board, opponent_board))
+
+    @property
+    def winning_player(self) -> GameOutcome:
+        black_score = self.black.popcount
+        white_score = self.white.popcount
+        if black_score > white_score:
+            return GameOutcome.BLACK_WINS
+        if white_score > black_score:
+            return GameOutcome.WHITE_WINS
+        return GameOutcome.DRAW
 
     def _string_array(self) -> np.ndarray:
         board = np.tile(" ", (BOARD_SIZE + 1, BOARD_SIZE + 1))

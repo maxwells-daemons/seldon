@@ -4,7 +4,7 @@ from libc.stdlib cimport malloc, free, rand
 
 from bitboard cimport Bitboard, bitboard_find_moves, popcount, bitboard_resolve_move
 
-from game import GameOutcome, Board, PlayerColor
+from board import GameOutcome, PlayerColor
 
 cdef extern from "cbitboard.c":
     cdef unsigned int select_bit(Bitboard bitboard, unsigned int rank)
@@ -56,6 +56,6 @@ def random_rollout(
     result = _random_rollout(active_bitboard, opponent_bitboard)
     return {
         DRAW: GameOutcome.DRAW,
-        ACTIVE: player.winning_outcome(),
-        OPPONENT: player.opponent().winning_outcome()
+        ACTIVE: player.winning_outcome,
+        OPPONENT: player.opponent.winning_outcome
     }[result]

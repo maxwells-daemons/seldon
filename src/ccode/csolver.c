@@ -25,7 +25,7 @@ static inline int negamax_fastest_first(uint64_t player, uint64_t opp, int alpha
                                         int beta, bool passed, int depth);
 static inline int move_index(uint64_t bitboard);
 
-move c_solve_game(uint64_t player, uint64_t opp) {
+move bitboard_solve_game(uint64_t player, uint64_t opp) {
     move result;
 
     int depth = MAX_SCORE - (int) popcount(player) - (int) popcount(opp);
@@ -44,6 +44,7 @@ move c_solve_game(uint64_t player, uint64_t opp) {
         new_disks = bitboard_resolve_move(player, opp, new_move);
         player_board = (player ^ new_disks) | new_move;
         opp_board = opp ^ new_disks;
+
         score = -negamax_fastest_first(opp_board, player_board, -INITIAL_BOUND,
                                        INITIAL_BOUND, false, depth);
 

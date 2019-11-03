@@ -4,7 +4,7 @@ cimport numpy as np
 
 from bitboard import serialize_piecearray
 
-def solve_game(np.ndarray player, np.ndarray opp):
+cpdef solve_game(np.ndarray player, np.ndarray opp):
     '''
     Solve a board with the explicit endgame solver, returning the best next move.
 
