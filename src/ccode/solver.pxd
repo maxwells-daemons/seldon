@@ -2,4 +2,4 @@
 from bitboard cimport Bitboard, move
 
 cdef extern from "csolver.c":
-    cdef move c_solve_game(Bitboard player, Bitboard opp)
+    cdef move bitboard_solve_game(Bitboard player, Bitboard opp)

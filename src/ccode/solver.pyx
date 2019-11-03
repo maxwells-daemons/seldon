@@ -2,7 +2,7 @@
 import numpy as np
 cimport numpy as np
 
-from bitboard import _serialize
+from bitboard import serialize_piecearray
 
 def solve_game(np.ndarray player, np.ndarray opp):
     '''
@@ -23,5 +23,6 @@ def solve_game(np.ndarray player, np.ndarray opp):
     score : int
         Expected final score.
     '''
-    cdef move c_move = c_solve_game(_serialize(player), _serialize(opp))
+    cdef move c_move = bitboard_solve_game(serialize_piecearray(player),
+                                           serialize_piecearray(opp))
     return (7 - c_move.x, 7 - c_move.y, c_move.score)

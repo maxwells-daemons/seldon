@@ -12,7 +12,7 @@
  * gen: sources of fill
  * pro: propagators of fill
  */
-unsigned int c_popcount_64(uint64_t x) {
+unsigned int popcount(uint64_t x) {
 #ifdef __GNUC__
     return __builtin_popcountll(x);
 #else
@@ -147,11 +147,11 @@ static inline uint64_t nowe_one(uint64_t gen) {
  * Mid-level bitboard operations
  */
 // Get a bitboard containing just the "lowest" disk in a bitboard
-uint64_t c_extract_disk(uint64_t bitboard) {
+uint64_t bitboard_extract_disk(uint64_t bitboard) {
     return bitboard & (uint64_t) (- (int64_t) bitboard);
 }
 
-uint64_t c_resolve_move(uint64_t player, uint64_t opp, uint64_t new_disk) {
+uint64_t bitboard_resolve_move(uint64_t player, uint64_t opp, uint64_t new_disk) {
     uint64_t msk = 0;
     msk |= soutOccl(player, opp) & nortOccl(new_disk, opp);
     msk |= nortOccl(player, opp) & soutOccl(new_disk, opp);
@@ -164,7 +164,7 @@ uint64_t c_resolve_move(uint64_t player, uint64_t opp, uint64_t new_disk) {
     return msk;
 }
 
-uint64_t c_make_singleton_bitboard(unsigned int x, unsigned int y) {
+uint64_t make_singleton_bitboard(unsigned int x, unsigned int y) {
     return 1ULL << ((7 - y) * 8 + (7 - x));
 }
 
@@ -172,7 +172,7 @@ uint64_t c_make_singleton_bitboard(unsigned int x, unsigned int y) {
  * Top-level bitboard operations
  */
 // Our pieces, opponent pieces
-uint64_t c_find_moves(uint64_t gen, uint64_t pro) {
+uint64_t bitboard_find_moves(uint64_t gen, uint64_t pro) {
     uint64_t moves = 0;
     uint64_t empty = ~(gen | pro);
     uint64_t tmp;
@@ -212,7 +212,7 @@ uint64_t c_find_moves(uint64_t gen, uint64_t pro) {
     return moves;
 }
 
-uint64_t c_stability(uint64_t player, uint64_t opp) {
+uint64_t bitboard_stability(uint64_t player, uint64_t opp) {
     const uint64_t top = 255ULL;
     const uint64_t bot = 18374686479671623680ULL;
     const uint64_t lft = 72340172838076673ULL;
@@ -245,7 +245,7 @@ uint64_t c_stability(uint64_t player, uint64_t opp) {
 }
 
 // Source: http://graphics.stanford.edu/~seander/bithacks.html#SelectPosFromMSBRank
-unsigned int c_select_bit(uint64_t bitboard, unsigned int rank) {
+unsigned int select_bit(uint64_t bitboard, unsigned int rank) {
   unsigned int s;      // Output: Resulting position of bit with rank r [1-64]
   uint64_t a, b, c, d; // Intermediate temporaries for bit count.
   unsigned int t;      // Bit count temporary.

@@ -10,4 +10,4 @@ typedef struct _move {
     int score;
 } move;
 
-move c_solve_game(uint64_t player, uint64_t opp);
+move bitboard_solve_game(uint64_t player, uint64_t opp);

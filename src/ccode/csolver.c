@@ -28,8 +28,8 @@ static inline int move_index(uint64_t bitboard);
 move c_solve_game(uint64_t player, uint64_t opp) {
     move result;
 
-    int depth = MAX_SCORE - (int) c_popcount_64(player) - (int) c_popcount_64(opp);
-    uint64_t moves = c_find_moves(player, opp);
+    int depth = MAX_SCORE - (int) popcount(player) - (int) popcount(opp);
+    uint64_t moves = bitboard_find_moves(player, opp);
     uint64_t new_move;
     uint64_t new_disks;
     uint64_t player_board;
@@ -39,9 +39,9 @@ move c_solve_game(uint64_t player, uint64_t opp) {
     int index = -1;
 
     while (moves != 0) {
-        new_move = c_extract_disk(moves);
+        new_move = bitboard_extract_disk(moves);
         moves &= ~new_move;
-        new_disks = c_resolve_move(player, opp, new_move);
+        new_disks = bitboard_resolve_move(player, opp, new_move);
         player_board = (player ^ new_disks) | new_move;
         opp_board = opp ^ new_disks;
         score = -negamax_fastest_first(opp_board, player_board, -INITIAL_BOUND,
@@ -70,7 +70,7 @@ move c_solve_game(uint64_t player, uint64_t opp) {
 // value of alpha if pruning. Updates alpha.
 static inline int negamax(uint64_t player, uint64_t opp, int alpha, int beta, bool
                           passed) {
-    uint64_t moves = c_find_moves(player, opp);
+    uint64_t moves = bitboard_find_moves(player, opp);
     if (moves == 0) {
         if (passed) {
             return evaluate(player, opp); // Game is over
@@ -89,9 +89,9 @@ static inline int negamax(uint64_t player, uint64_t opp, int alpha, int beta, bo
     unsigned char n_moves = 0;
 
     while (moves != 0) {
-        new_move = c_extract_disk(moves);
+        new_move = bitboard_extract_disk(moves);
         moves &= ~new_move;
-        new_disks = c_resolve_move(player, opp, new_move);
+        new_disks = bitboard_resolve_move(player, opp, new_move);
         player_boards[n_moves] = (player ^ new_disks) | new_move;
         opp_boards[n_moves] = opp ^ new_disks;
         n_moves += 1;
@@ -123,7 +123,7 @@ static inline int negamax_fastest_first(uint64_t player, uint64_t opp, int alpha
         return negamax(player, opp, alpha, beta, passed);
     }
 
-    uint64_t moves = c_find_moves(player, opp);
+    uint64_t moves = bitboard_find_moves(player, opp);
     if (moves == 0) {
         if (passed) {
             return evaluate(player, opp); // Game is over
@@ -145,9 +145,9 @@ static inline int negamax_fastest_first(uint64_t player, uint64_t opp, int alpha
     unsigned char n_moves = 0;
 
     while (moves != 0) {
-        new_move = c_extract_disk(moves);
+        new_move = bitboard_extract_disk(moves);
         moves &= ~new_move;
-        new_disks = c_resolve_move(player, opp, new_move);
+        new_disks = bitboard_resolve_move(player, opp, new_move);
 
         player_board = (player ^ new_disks) | new_move;
         opp_board = opp ^ new_disks;
@@ -199,17 +199,17 @@ static inline int negamax_fastest_first(uint64_t player, uint64_t opp, int alpha
 static inline int evaluate(uint64_t player, uint64_t opp) {
 #ifdef BENCHMARK
     // "Winner gets empties" scoring
-    int score = (int) c_popcount_64(player) - (int) c_popcount_64(opp);
-    int empties = c_popcount_64(~player & ~opp);
+    int score = (int) popcount(player) - (int) popcount(opp);
+    int empties = popcount(~player & ~opp);
     return score > 0 ? score + empties : score - empties;
 #else
-    return (int) c_popcount_64(player) - (int) c_popcount_64(opp);
+    return (int) popcount(player) - (int) popcount(opp);
 #endif
 }
 
 static inline unsigned int mobility(uint64_t player, uint64_t opp) {
-    uint64_t _moves = c_find_moves(player, opp);
-    return c_popcount_64(_moves);
+    uint64_t _moves = bitboard_find_moves(player, opp);
+    return popcount(_moves);
 }
 
 static inline int move_index(uint64_t bitboard) {
