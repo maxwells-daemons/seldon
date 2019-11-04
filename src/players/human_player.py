@@ -2,7 +2,6 @@ from string import ascii_lowercase
 from typing import Optional
 
 import numpy as np  # type: ignore
-from termcolor import colored
 
 from board import BOARD_SIZE, Board, Loc
 from player import PlayerABC

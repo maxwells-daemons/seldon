@@ -4,7 +4,6 @@ from time import time
 from typing import Dict, List, Optional
 
 import numpy as np  # type: ignore
-from termcolor import colored
 
 from board import BOARD_SQUARES, Board, GameOutcome, Loc, PlayerColor
 from mcts_utils import random_rollout  # type: ignore
