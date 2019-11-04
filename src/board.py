@@ -76,7 +76,13 @@ class Loc(NamedTuple):
     x: int
     y: int
 
+    @staticmethod
+    def pass_loc() -> "Loc":
+        return Loc(-1, -1)
+
     def __repr__(self) -> str:
+        if self == Loc.pass_loc():
+            return "pass"
         return ascii_lowercase[self.x] + str(self.y + 1)
 
     def __lt__(self, other):

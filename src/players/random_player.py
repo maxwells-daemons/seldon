@@ -10,6 +10,6 @@ class RandomPlayer(PlayerABC):
         self, board: Board, opponent_move: Optional[Loc], ms_left: Optional[int] = None
     ) -> Loc:
         if not board.has_moves(self.color):
-            return Loc(-1, -1)
+            return Loc.pass_loc()
 
         return random.choice(board.find_moves(self.color).loc_list)

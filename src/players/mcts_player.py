@@ -107,8 +107,7 @@ class MCTSPlayer(PlayerABC):
             self.search_tree = SearchTree(board, self.color, self.explore_coeff)
 
         if not board.has_moves(self.color):
-            self.logger.info(f"Move: {colored('pass.', 'yellow')}")
-            return Loc(-1, -1)
+            return Loc.pass_loc()
 
         if ms_left:
             t1 = time() * 1000
