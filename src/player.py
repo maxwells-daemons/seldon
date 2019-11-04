@@ -60,13 +60,21 @@ class PlayerABC(ABC):
     def get_move(
         self, board: Board, opponent_move: Optional[Loc], ms_left: Optional[int]
     ) -> Loc:
+        opp_fmt = "pass" if opponent_move is None else opponent_move.__repr__()
+        self.logger.info(f"Opponent's move: {colored(opp_fmt, 'red')}.")
+
+        if not board.has_moves(self.color):
+            self.logger.info(f"Move: {colored('pass.', 'yellow')}")
+            return Loc(-1, -1)
+
         t1 = monotonic()
         move = self._get_move(board, opponent_move, ms_left)
         t2 = monotonic()
 
+        move_count = board.white.popcount + board.black.popcount - 3
         move_format = colored(move.__repr__(), "yellow")
         time_format = colored(f"{t2 - t1:.2f} s", "green")
-        self.logger.info(f"Made move: {move_format} (time: {time_format}).")
+        self.logger.info(f"Move {move_count}: {move_format} (time: {time_format}).\n")
         return move
 
     @abstractmethod
@@ -127,8 +135,8 @@ class PlayerABC(ABC):
                 empties = BOARD_SQUARES - board.white.popcount - board.black.popcount
 
                 if empties <= depth:
-                    self.logger.debug(
-                        f"Running solver at depth: {colored(str(empties), 'red')}."
+                    self.logger.info(
+                        f"Running solver at depth: {colored(str(empties), 'cyan')}."
                     )
                     mine, opp = board.player_view(self.color)
                     x, y, _ = solve_game(mine.piecearray, opp.piecearray)

@@ -22,9 +22,9 @@ class HumanPlayer(PlayerABC):
         all_moves = moves_bitboard.loc_list
         board_rep = board._string_array()
         board_rep[1:, 1:][np.where(moves_bitboard.piecearray)] = "-"
-        print("\n" + np.array2string(board_rep, formatter={"numpystr": str}))
-        print(f"To move: {self.color.value}.")
-        print(f"Legal moves: {all_moves}")
+        self.logger.info("\n" + np.array2string(board_rep, formatter={"numpystr": str}))
+        self.logger.info(f"To move: {self.color.value}.")
+        self.logger.info(f"Legal moves: {all_moves}")
 
         while True:
             try:
@@ -37,4 +37,4 @@ class HumanPlayer(PlayerABC):
             if move in all_moves:
                 return move
 
-            print(f"Illegal move: {move}. Please try again.")
+            self.logger.error(f"Illegal move: {move}. Please try again.")

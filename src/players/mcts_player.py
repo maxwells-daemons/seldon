@@ -1,6 +1,6 @@
 import random
-import sys
 from math import ceil, log, sqrt
+from pprint import pformat
 from time import time
 from typing import Dict, List, Optional
 
@@ -24,6 +24,10 @@ class SearchTree:
         self.visits: int = 0
         self.unexplored: List[Loc] = board.find_moves(player).loc_list
         self.explored: Dict[Loc, SearchTree] = {}
+
+    @property
+    def _value_summary(self) -> str:
+        return f"""vs={self.visits}; ev={self.value / self.visits:.3f}"""
 
     def _uct_score(self, parent_visits: int) -> float:
         return (self.value / self.visits) + self.explore_coeff * sqrt(
@@ -90,11 +94,16 @@ class MCTSPlayer(PlayerABC):
         self, board: Board, opponent_move: Optional[Loc], ms_left: Optional[int]
     ) -> Loc:
         if opponent_move is None:
-            pass  # Opponent skips: keep the tree from our last move
+            pass  # Keep tree the same
         elif opponent_move in self.search_tree.explored.keys():
             self.search_tree = self.search_tree.explored[opponent_move]  # type: ignore
+            self.logger.debug(
+                f"""Opponent's node:
+        Expected value: {self.search_tree.value / self.search_tree.visits:.2f}
+        Visits: {self.search_tree.visits}"""
+            )
         else:
-            print("WARNING: Opponent made a move we haven't explored.", file=sys.stderr)
+            self.logger.warning("Off tree! Generating a new search tree...")
             self.search_tree = SearchTree(board, self.color, self.explore_coeff)
 
         if ms_left:
@@ -107,8 +116,8 @@ class MCTSPlayer(PlayerABC):
             while time() * 1000 - t1 < time_per_turn - self.turn_ms_buffer:
                 self.search_tree.traverse()
                 n += 1
-            print(f"SELDON: Searched {n} nodes.", file=sys.stderr)
         else:
+            n = DEFAULT_N_TRAVERSALS
             for _ in range(DEFAULT_N_TRAVERSALS):
                 self.search_tree.traverse()
 
@@ -117,7 +126,10 @@ class MCTSPlayer(PlayerABC):
         move_idx = np.argmax(visit_counts)
         move, self.search_tree = moves_and_nodes[move_idx]
 
-        win_rate = self.search_tree.value / self.search_tree.visits
-        print(f"Move: {move}", file=sys.stderr)
-        print(f"Expected win rate: {win_rate}.", file=sys.stderr)
+        self.logger.debug(
+            f"""Chosen node:
+    Expected value: {self.search_tree.value / self.search_tree.visits:.2f}
+    Visits: {self.search_tree.visits}
+    Traversals: {n}"""
+        )
         return move
