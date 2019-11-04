@@ -5,6 +5,7 @@ import numpy as np  # type: ignore
 
 from board import BOARD_SIZE, Board, Loc
 from player import PlayerABC
+from termcolor import colored
 
 
 def _parse_input(input_: str) -> Loc:
@@ -25,6 +26,10 @@ class HumanPlayer(PlayerABC):
         self.logger.info("\n" + np.array2string(board_rep, formatter={"numpystr": str}))
         self.logger.info(f"To move: {self.color.value}.")
         self.logger.info(f"Legal moves: {all_moves}")
+
+        if not board.has_moves(self.color):
+            self.logger.info(f"Move: {colored('pass.', 'yellow')}")
+            return Loc(-1, -1)
 
         while True:
             try:

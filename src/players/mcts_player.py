@@ -1,10 +1,10 @@
 import random
 from math import ceil, log, sqrt
-from pprint import pformat
 from time import time
 from typing import Dict, List, Optional
 
 import numpy as np  # type: ignore
+from termcolor import colored
 
 from board import BOARD_SQUARES, Board, GameOutcome, Loc, PlayerColor
 from mcts_utils import random_rollout  # type: ignore
@@ -105,6 +105,10 @@ class MCTSPlayer(PlayerABC):
         else:
             self.logger.warning("Off tree! Generating a new search tree...")
             self.search_tree = SearchTree(board, self.color, self.explore_coeff)
+
+        if not board.has_moves(self.color):
+            self.logger.info(f"Move: {colored('pass.', 'yellow')}")
+            return Loc(-1, -1)
 
         if ms_left:
             t1 = time() * 1000

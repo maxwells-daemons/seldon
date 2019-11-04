@@ -55,6 +55,10 @@ class PlayerABC(ABC):
         self.logger.addHandler(log_handler)
         self.logger.setLevel(logging.DEBUG)
 
+        if ms_total:
+            self.logger.debug(
+                f"Time per move: {2 * ms_total / (BOARD_SQUARES * 1000):.2f} s."
+            )
         self.logger.debug("Finished initializing player.")
 
     def get_move(
@@ -62,10 +66,6 @@ class PlayerABC(ABC):
     ) -> Loc:
         opp_fmt = "pass" if opponent_move is None else opponent_move.__repr__()
         self.logger.info(f"Opponent's move: {colored(opp_fmt, 'red')}.")
-
-        if not board.has_moves(self.color):
-            self.logger.info(f"Move: {colored('pass.', 'yellow')}")
-            return Loc(-1, -1)
 
         t1 = monotonic()
         move = self._get_move(board, opponent_move, ms_left)
@@ -84,7 +84,7 @@ class PlayerABC(ABC):
         """
         Get this player's next move.
 
-        There is guaranteed to be at least one legal move.
+        If there are no legal moves, the player must return Loc(-1, -1).
 
         Parameters
         ----------
