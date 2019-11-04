@@ -3,38 +3,27 @@ from typing import Optional
 
 import numpy as np  # type: ignore
 
-from bitboard import find_moves  # type: ignore
-from game import BOARD_SIZE, Board, Move, PlayerABC
-from utils import moves_list
+from board import BOARD_SIZE, Board, Loc
+from player import PlayerABC
 
 
-def _parse_input(input_: str) -> Move:
+def _parse_input(input_: str) -> Loc:
     x_, y_ = input_
     x = ascii_lowercase[:BOARD_SIZE].index(x_)
     y = int(y_) - 1
-    return Move(x, y)
+    return Loc(x, y)
 
 
 class HumanPlayer(PlayerABC):
-    def get_move(
-        self,
-        player_board: np.ndarray,
-        opponent_board: np.ndarray,
-        opponent_move: Optional[Move],
-        ms_left: Optional[int],
-    ) -> Move:
-        moves_bitboard = find_moves(player_board, opponent_board)
-        all_moves = list(sorted(moves_list(moves_bitboard)))
-        board = Board(
-            **{
-                self.color.value: player_board,
-                self.color.opponent().value: opponent_board,
-            }
-        )
-
+    def _get_move(
+        self, board: Board, opponent_move: Optional[Loc], ms_left: Optional[int] = None
+    ) -> Loc:
+        moves_bitboard = board.find_moves(self.color)
+        all_moves = moves_bitboard.loc_list
         board_rep = board._string_array()
-        board_rep[1:, 1:][np.where(moves_bitboard)] = "-"
+        board_rep[1:, 1:][np.where(moves_bitboard.piecearray)] = "-"
         print("\n" + np.array2string(board_rep, formatter={"numpystr": str}))
+        print(f"To move: {self.color.value}.")
         print(f"Legal moves: {all_moves}")
 
         while True:
@@ -45,7 +34,7 @@ class HumanPlayer(PlayerABC):
                 print("Invalid input. Please try again.")
                 continue
 
-            if moves_bitboard[move.y, move.x]:
+            if move in all_moves:
                 return move
 
             print(f"Illegal move: {move}. Please try again.")

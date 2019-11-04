@@ -1,21 +1,12 @@
-from random import choice
+import random
 from typing import Optional
 
-import numpy as np  # type: ignore
-
-from bitboard import find_moves  # type: ignore
-from game import Move, PlayerABC
-from utils import moves_list
+from board import Board, Loc
+from player import PlayerABC
 
 
 class RandomPlayer(PlayerABC):
-    def get_move(
-        self,
-        player_board: np.ndarray,
-        opponent_board: np.ndarray,
-        opponent_move: Optional[Move],
-        ms_left: Optional[int],
-    ) -> Move:
-        moves_bitboard = find_moves(player_board, opponent_board)
-        all_moves = moves_list(moves_bitboard)
-        return choice(all_moves)
+    def _get_move(
+        self, board: Board, opponent_move: Optional[Loc], ms_left: Optional[int] = None
+    ) -> Loc:
+        return random.choice(board.find_moves(self.color).loc_list)
