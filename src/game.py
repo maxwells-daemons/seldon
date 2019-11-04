@@ -3,7 +3,8 @@ Functions to run Othello games.
 """
 
 
-from time import time
+import logging
+from time import monotonic
 from typing import Dict, Optional, Type
 
 from board import Board, GameOutcome, Loc, PlayerColor
@@ -59,11 +60,11 @@ def play_game_from_state(
         if board.has_moves(current_player):
             just_passed = False
 
-            t1 = time()
+            t1 = monotonic()
             move = players[current_player].get_move(
                 board, last_move, times[current_player]
             )
-            t2 = time()
+            t2 = monotonic()
 
             last_move = move
             board = board.resolve_move(move, current_player)
@@ -71,7 +72,7 @@ def play_game_from_state(
             if times[current_player] is not None:
                 times[current_player] -= int((t2 - t1) * 1000)  # type: ignore
                 if times[current_player] < 0:  # type: ignore
-                    print(f"Player {current_player} timed out.")
+                    logging.error(f"Player {current_player} timed out.")
                     return current_player.opponent.winning_outcome
         else:
             if just_passed:
