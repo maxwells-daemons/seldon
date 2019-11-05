@@ -20,11 +20,15 @@ def run_player(player_class: Type[PlayerABC], **player_kwargs) -> None:
 
     while True:
         opp_x_, opp_y_, ms_left_ = input().split()
-        opp_x, opp_y, ms_left = int(opp_x_), int(opp_y_), int(ms_left_)
+        opp_x, opp_y = int(opp_x_), int(opp_y_)
+        ms_left: Optional[int] = int(ms_left_)
+        if ms_left == -1:
+            ms_left = None
 
         if player is None:
-            ms_tot = ms_left if ms_left > 0 else None
-            player = player_class(color, ms_tot, **player_kwargs)  # type: ignore
+            player = player_class(  # type: ignore
+                color=color, ms_total=ms_left, **player_kwargs
+            )
             player.logger.setLevel(logging.DEBUG)
 
         if opp_x < 0:  # Opponent passed
