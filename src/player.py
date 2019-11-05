@@ -3,10 +3,9 @@ from abc import ABC, abstractmethod
 from time import monotonic
 from typing import Optional, Type
 
-from termcolor import colored
-
 from board import BOARD_SQUARES, Board, Loc, PlayerColor
 from solver import solve_game  # type: ignore
+from termcolor import colored
 
 
 """
@@ -45,14 +44,15 @@ class PlayerABC(ABC):
 
         log_name = f"{self.__class__.__name__} ({self.color.value})"
         self.logger: logging.Logger = logging.getLogger(log_name)
-        log_handler = logging.StreamHandler()
-        log_handler.setLevel(logging.DEBUG)
-        log_handler.setFormatter(
-            logging.Formatter(
-                fmt=f"{log_name} %(levelname)s >>- %(message)s", datefmt="%H:%M:%S"
+        if not self.logger.handlers:
+            log_handler = logging.StreamHandler()
+            log_handler.setLevel(logging.DEBUG)
+            log_handler.setFormatter(
+                logging.Formatter(
+                    fmt=f"{log_name} %(levelname)s >>- %(message)s", datefmt="%H:%M:%S"
+                )
             )
-        )
-        self.logger.addHandler(log_handler)
+            self.logger.addHandler(log_handler)
         self.logger.setLevel(logging.DEBUG)
 
         if ms_total:
