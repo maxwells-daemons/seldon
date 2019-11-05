@@ -5,6 +5,10 @@ src/ccode/bitboard.c
 src/ccode/solver.c
 src/ccode/mcts_utils.c
 
+### Framework
+OthelloFramework.jar
+testgame
+
 ### Vim
 ### Source: https://github.com/github/gitignore/blob/master/Global/Vim.gitignore
 # Swap
