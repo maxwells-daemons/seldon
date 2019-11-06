@@ -136,7 +136,13 @@ class Board(NamedTuple):
     def starting_board() -> "Board":
         return Board(Bitboard(0x0000000810000000), Bitboard(0x0000001008000000))
 
-    def player_view(self, player: PlayerColor) -> Tuple[np.ndarray, np.ndarray]:
+    @property
+    def is_terminal(self) -> bool:
+        return (not self.has_moves(PlayerColor.BLACK)) and (
+            not self.has_moves(PlayerColor.WHITE)
+        )
+
+    def player_view(self, player: PlayerColor) -> Tuple[Bitboard, Bitboard]:
         """
         Retrieve (my board, opponent board) tuple.
         """
@@ -173,6 +179,14 @@ class Board(NamedTuple):
         if white_score > black_score:
             return GameOutcome.WHITE_WINS
         return GameOutcome.DRAW
+
+    def score_for_player(self, player: PlayerColor) -> int:
+        winner = self.winning_player
+        if winner == player:
+            return 1
+        if winner == player.opponent:
+            return -1
+        return 0
 
     def _string_array(self) -> np.ndarray:
         board = np.tile(" ", (BOARD_SIZE + 1, BOARD_SIZE + 1))
