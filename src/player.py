@@ -1,7 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from time import monotonic
-from typing import Optional, Type
+from types import MethodType
+from typing import Optional
 
 from board import BOARD_SQUARES, Board, Loc, PlayerColor
 from solver import solve_game  # type: ignore
@@ -22,14 +24,6 @@ class PlayerABC(ABC):
     """
     ABC for Othello players.
 
-    Parameters
-    ----------
-    color : PlayerColor
-        This player's color.
-    ms_left : int or None
-        Milliseconds total in this bot's time budget.
-        If None, unlimited time is available.
-
     Attributes
     ----------
     color : PlayerColor
@@ -38,7 +32,21 @@ class PlayerABC(ABC):
         A logger for formatting and printing this player's output.
     """
 
-    def __init__(self, color: PlayerColor, ms_total: Optional[int] = None) -> None:
+    _initialized = False
+
+    def initialize(self, color: PlayerColor, ms_total: Optional[int]) -> None:
+        """
+        Initialize a player's attributes. Used by the game framework; do not overwrite.
+
+        Parameters
+        ----------
+        color : PlayerColor
+            This player's color.
+        ms_left : int or None
+            Milliseconds total in this bot's time budget.
+            If None, unlimited time is available.
+        """
+        self._initialized = True
         self.color: PlayerColor = color
         self.ms_total: Optional[int] = ms_total
 
@@ -64,6 +72,7 @@ class PlayerABC(ABC):
     def get_move(
         self, board: Board, opponent_move: Optional[Loc], ms_left: Optional[int]
     ) -> Loc:
+        assert self._initialized
         opp_fmt = "pass" if opponent_move is None else opponent_move.__repr__()
         self.logger.info(f"Opponent's move: {colored(opp_fmt, 'red')}.")
 
@@ -104,8 +113,7 @@ class PlayerABC(ABC):
         """
         raise NotImplementedError
 
-    @classmethod
-    def with_depth_solver(cls, depth: int, time: int) -> Type["PlayerABC"]:
+    def with_depth_solver(self, depth: int, time: int) -> "PlayerABC":
         """
         Wrap a player such that after few enough spots are left empty, moves are made
         with the endgame solver.
@@ -116,35 +124,39 @@ class PlayerABC(ABC):
             Depth to start solving endgame at.
         time : int
             How many milliseconds to reserve for endgame solving.
+
+        Returns
+        -------
+        PlayerABC
+            A copy of this player with a different _get_move function.
         """
 
-        class _PlayerWithSolver(PlayerABC):
-            def __init__(
-                self, color: PlayerColor, ms_total: Optional[int] = None, **kwargs
-            ) -> None:
-                if ms_total:
-                    ms_total -= time
-                self.player = cls(color, ms_total, **kwargs)  # type: ignore
-                super().__init__(color, ms_total)
-                self.logger = self.player.logger
-                self.logger.propagate = False
+        player = deepcopy(self)
+        __get_move = player._get_move
 
-            def _get_move(
-                self, board: Board, opponent_move: Optional[Loc], ms_left: Optional[int]
-            ) -> Loc:
-                empties = BOARD_SQUARES - board.white.popcount - board.black.popcount
+        def _get_move(
+            self: PlayerABC,
+            board: Board,
+            opponent_move: Optional[Loc],
+            ms_left: Optional[int],
+        ) -> Loc:
+            empties = BOARD_SQUARES - board.white.popcount - board.black.popcount
 
-                if empties <= depth:
-                    self.logger.info(
-                        f"Running solver at depth: {colored(str(empties), 'cyan')}."
-                    )
-                    mine, opp = board.player_view(self.color)
-                    x, y, _ = solve_game(mine.piecearray, opp.piecearray)
-                    return Loc(x, y)
+            if empties <= depth:
+                if not board.has_moves(self.color):
+                    return Loc.pass_loc()
 
-                if ms_left:
-                    ms_left -= time
+                self.logger.info(
+                    f"Running solver at depth: {colored(str(empties), 'cyan')}."
+                )
+                mine, opp = board.player_view(self.color)
+                x, y, _ = solve_game(mine.piecearray, opp.piecearray)
+                return Loc(x, y)
 
-                return self.player._get_move(board, opponent_move, ms_left)
+            if ms_left:
+                ms_left -= time
 
-        return _PlayerWithSolver
+            return __get_move(board, opponent_move, ms_left)
+
+        player._get_move = MethodType(_get_move, player)  # type: ignore
+        return player

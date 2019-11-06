@@ -75,19 +75,12 @@ class SearchTree:
 
 
 class MCTSPlayer(PlayerABC):
-    def __init__(
-        self,
-        color: PlayerColor,
-        ms_total: Optional[int],
-        explore_coeff: float,
-        turn_ms_buffer: int = 0,
-    ) -> None:
+    def __init__(self, explore_coeff: float, turn_ms_buffer: int = 0) -> None:
         self.explore_coeff = explore_coeff
         self.search_tree: SearchTree = SearchTree(
             Board.starting_board(), PlayerColor.BLACK, self.explore_coeff
         )
         self.turn_ms_buffer = turn_ms_buffer
-        super().__init__(color)
 
     def _get_move(
         self, board: Board, opponent_move: Optional[Loc], ms_left: Optional[int]
