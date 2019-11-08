@@ -4,12 +4,13 @@ http://www.ffothello.org/informatique/la-base-wthor/.
 """
 import os
 from glob import glob
-from typing import List, NamedTuple, Tuple
+from typing import List, NamedTuple, Tuple, Union
 
 import click
 import numpy as np  # type: ignore
+from tensorflow.keras.utils import to_categorical  # type: ignore
 
-from board import Board, GameOutcome, Loc, PlayerColor
+from board import BOARD_SIZE, Board, GameOutcome, Loc, PlayerColor
 
 DB_HEADER_BYTES = 16
 GAME_BYTES = 68
@@ -98,10 +99,15 @@ def parse_db(filename: str) -> List[GameSummary]:
 @click.option("--wthor_glob", default="resources/wthor/game_data/*.wtb")
 @click.option("--out_dir", default="resources/wthor/numpy/")
 def main(wthor_glob: str, out_dir: str):
+    all_dir = os.path.join(out_dir, "all")
+    no_pass_dir = os.path.join(out_dir, "no_pass")
+    os.makedirs(all_dir, exist_ok=True)
+    os.makedirs(no_pass_dir, exist_ok=True)
+
     db_files = glob(wthor_glob)
-    boards: List[np.ndarray] = []
-    moves: List[Tuple[int, int]] = []
-    values: List[int] = []
+    boards: Union[List[np.ndarray], np.ndarray] = []
+    moves: Union[List[Tuple[int, int]], np.ndarray] = []
+    values: Union[List[int], np.ndarray] = []
 
     for filename in db_files:
         games = parse_db(filename)
@@ -113,9 +119,28 @@ def main(wthor_glob: str, out_dir: str):
             moves.extend(new_moves)
             values.extend(new_values)
 
-    np.save(os.path.join(out_dir, "boards.npy"), np.array(boards))
-    np.save(os.path.join(out_dir, "moves.npy"), np.array(moves))
-    np.save(os.path.join(out_dir, "values.npy"), np.array(values))
+    boards = np.array(boards)
+    moves = np.array(moves)
+    values = np.array(values)
+    moves_int = moves[:, 0] + BOARD_SIZE * moves[:, 1]  # type: ignore
+    moves_onehot = to_categorical(moves_int)
+
+    np.save(os.path.join(all_dir, "boards.npy"), boards)
+    np.save(os.path.join(all_dir, "moves.npy"), moves)
+    np.save(os.path.join(all_dir, "moves_onehot.npy"), moves_onehot)
+    np.save(os.path.join(all_dir, "values.npy"), values)
+
+    legal_indices = np.where(moves[:, 0])
+    boards = boards[legal_indices]
+    moves = moves[legal_indices]
+    moves_onehot = moves_onehot[legal_indices]
+    values = values[legal_indices]
+
+    np.save(os.path.join(no_pass_dir, "boards.npy"), boards)
+    np.save(os.path.join(no_pass_dir, "moves.npy"), moves)
+    np.save(os.path.join(no_pass_dir, "moves_onehot.npy"), moves_onehot)
+    np.save(os.path.join(no_pass_dir, "values.npy"), values)
+
     print("Done!")
 
 
