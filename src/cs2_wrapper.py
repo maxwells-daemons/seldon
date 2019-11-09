@@ -14,7 +14,6 @@ from player import PlayerABC
 def run_player(player: PlayerABC, **player_kwargs) -> None:
     color = {"Black": PlayerColor.BLACK, "White": PlayerColor.WHITE}[sys.argv[1]]
     board = Board.starting_board()
-    initialized = False
     print(f"Player ready: {player.__class__.__name__} ({color.value})")
 
     while True:
@@ -24,7 +23,7 @@ def run_player(player: PlayerABC, **player_kwargs) -> None:
         if ms_left == -1:
             ms_left = None
 
-        if not initialized:
+        if not player._initialized:
             player.initialize(color, ms_left)
 
         if opp_x < 0:  # Opponent passed
