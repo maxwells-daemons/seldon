@@ -2,15 +2,18 @@
 Code for working with the WThor database, available at
 http://www.ffothello.org/informatique/la-base-wthor/.
 """
+import logging
 import os
 from glob import glob
 from typing import List, NamedTuple, Tuple, Union
 
 import click
 import numpy as np  # type: ignore
-from tensorflow.keras.utils import to_categorical  # type: ignore
 
-from board import BOARD_SIZE, Board, GameOutcome, Loc, PlayerColor
+import tensorflow as tf  # type: ignore
+from board import BOARD_SIZE, Bitboard, Board, GameOutcome, Loc, PlayerColor
+from data import serialize_example
+from tensorflow.keras.utils import to_categorical  # type: ignore
 
 DB_HEADER_BYTES = 16
 GAME_BYTES = 68
@@ -82,7 +85,7 @@ def parse_game(game_bytes: bytes) -> GameSummary:
 
 
 def parse_db(filename: str) -> List[GameSummary]:
-    print(f"Parsing database: {filename}")
+    logging.info(f"Parsing database: {filename}")
 
     with open(filename, "rb") as f:
         db_bytes = f.read()
@@ -95,10 +98,25 @@ def parse_db(filename: str) -> List[GameSummary]:
     return summaries
 
 
+def make_dataset(
+    boards: np.ndarray, moves: np.ndarray, values: np.ndarray
+) -> tf.data.Dataset:
+    def gen():
+        for i in range(boards.shape[0]):
+            black_bb = Bitboard.from_piecearray(boards[i, :, :, 0])
+            white_bb = Bitboard.from_piecearray(boards[i, :, :, 1])
+            board = Board.from_player_view(black_bb, white_bb, PlayerColor.BLACK)
+            move = Loc(moves[i, 0], moves[i, 1])
+            yield serialize_example(board, move, values[i])
+
+    return tf.data.Dataset.from_generator(gen, output_types=tf.string, output_shapes=())
+
+
 @click.command()
 @click.option("--wthor_glob", default="resources/wthor/game_data/*.wtb")
-@click.option("--out_dir", default="resources/wthor/numpy/")
+@click.option("--out_dir", default="resources/wthor/preprocessed/")
 def main(wthor_glob: str, out_dir: str):
+    logging.basicConfig(level=logging.INFO)
     all_dir = os.path.join(out_dir, "all")
     no_pass_dir = os.path.join(out_dir, "no_pass")
     os.makedirs(all_dir, exist_ok=True)
@@ -108,6 +126,9 @@ def main(wthor_glob: str, out_dir: str):
     boards: Union[List[np.ndarray], np.ndarray] = []
     moves: Union[List[Tuple[int, int]], np.ndarray] = []
     values: Union[List[int], np.ndarray] = []
+
+    logging.info(f"Reading files: {db_files}")
+    logging.info(f"Writing files to: {out_dir}")
 
     for filename in db_files:
         games = parse_db(filename)
@@ -130,6 +151,14 @@ def main(wthor_glob: str, out_dir: str):
     np.save(os.path.join(all_dir, "moves_onehot.npy"), moves_onehot)
     np.save(os.path.join(all_dir, "values.npy"), values)
 
+    logging.info("Writing all-states TFRecord")
+    ds = make_dataset(boards, moves, values)
+    writer = tf.data.experimental.TFRecordWriter(
+        os.path.join(all_dir, "wthor_all.tfrecord")
+    )
+    writer.write(ds)
+    del ds
+
     legal_indices = np.where(moves[:, 0])
     boards = boards[legal_indices]
     moves = moves[legal_indices]
@@ -140,6 +169,13 @@ def main(wthor_glob: str, out_dir: str):
     np.save(os.path.join(no_pass_dir, "moves.npy"), moves)
     np.save(os.path.join(no_pass_dir, "moves_onehot.npy"), moves_onehot)
     np.save(os.path.join(no_pass_dir, "values.npy"), values)
+
+    logging.info("Writing no-pass TFRecord")
+    ds = make_dataset(boards, moves, values)
+    writer = tf.data.experimental.TFRecordWriter(
+        os.path.join(no_pass_dir, "wthor_no_pass.tfrecord")
+    )
+    writer.write(ds)
 
     print("Done!")
 

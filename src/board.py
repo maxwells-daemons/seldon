@@ -80,6 +80,14 @@ class Loc(NamedTuple):
     def pass_loc() -> "Loc":
         return Loc(-1, -1)
 
+    @property
+    def as_int(self) -> int:
+        return self.x + BOARD_SIZE * self.y
+
+    @staticmethod
+    def from_int(val: int) -> "Loc":
+        return Loc(val % BOARD_SIZE, val // BOARD_SIZE)
+
     def __repr__(self) -> str:
         if self == Loc.pass_loc():
             return "pass"

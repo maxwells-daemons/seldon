@@ -1,7 +1,6 @@
 import tensorflow as tf  # type: ignore
 import tensorflow.keras.layers as L  # type: ignore
-
-from board import BOARD_SHAPE, BOARD_SIZE, BOARD_SQUARES
+from board import BOARD_SIZE, BOARD_SQUARES
 
 
 def residual_block(
@@ -49,6 +48,7 @@ def get_network(
     value_head_filters: int = 1,
     value_dense_units: int = 64,
     separable_convs: bool = False,
+    normalize_policy: bool = False,
 ) -> tf.keras.Model:
     """
     Make a (policy, value) network.
@@ -67,6 +67,8 @@ def get_network(
         How many units to use for the value head's internal dense layer.
     separable_convs : bool
         If True, use depthwise-separable convolution.
+    normalize_policy : bool
+        If True, policy is run through a softmax. Do not use if masking.
     """
 
     if separable_convs:
@@ -74,7 +76,7 @@ def get_network(
     else:
         conv_fn = L.Conv2D
 
-    inputs_ = L.Input(shape=(BOARD_SIZE, BOARD_SIZE, 2))
+    inputs_ = L.Input(shape=(BOARD_SIZE, BOARD_SIZE, 2), name="board")
     x = conv_fn(filters, (3, 3), padding="same", name="input_conv2d")(inputs_)
     x = L.BatchNormalization(axis=-1, name="input_batchnorm")(x)
     x = L.ReLU(name="input_relu")(x)
@@ -88,7 +90,8 @@ def get_network(
     policy = L.ReLU(name="policy_relu")(policy)
     policy = L.Flatten(name="policy_flatten")(policy)
     policy = L.Dense(BOARD_SQUARES, name="policy_dense")(policy)
-    policy = L.Reshape(BOARD_SHAPE, name="policy_unflatten")(policy)
+    if normalize_policy:
+        policy = L.Softmax(name="policy_softmax")(policy)
 
     # Value head
     value = L.Conv2D(value_head_filters, (1, 1), name="value_conv2d")(x)
@@ -100,4 +103,4 @@ def get_network(
     value = L.Dense(1, name="value_dense_2")(value)
     value = tf.keras.activations.tanh(value)
 
-    return tf.keras.Model(inputs=inputs_, outputs=(policy, value))
+    return tf.keras.Model(inputs=inputs_, outputs=[policy, value])
