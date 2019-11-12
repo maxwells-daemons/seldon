@@ -29,7 +29,7 @@ flags.DEFINE_integer("buffer_time", 80, "Milliseconds to reserve each turn.")
 
 
 def main(argv):
-    color = argv[0]
+    color = argv[1]
     model = tf.keras.models.load_model(FLAGS.network)
 
     def network_evaluator(board: np.ndarray) -> Tuple[np.ndarray, float]:
