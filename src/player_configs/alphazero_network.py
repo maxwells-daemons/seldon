@@ -7,7 +7,7 @@ import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 
 import src.cs2_wrapper  # type: ignore
-import src.players.alphazero.alphazero_player  # type: ignore
+import src.players.alphazero_player  # type: ignore
 from board import BOARD_SHAPE, PlayerColor
 
 
@@ -57,7 +57,7 @@ def main(
         policy = np.reshape(policy, BOARD_SHAPE)
         return policy, value[0, 0]
 
-    player = src.players.alphazero.alphazero_player.AlphaZeroPlayer(
+    player = src.players.alphazero_player.AlphaZeroPlayer(
         evaluator=network_evaluator, explore_coeff=c, finalized=True, sims_per_turn=sims
     )
 
