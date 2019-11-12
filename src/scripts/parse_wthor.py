@@ -30,7 +30,9 @@ class GameState(NamedTuple):
         mine, opp = self.board.player_view(self.player)
         board = np.dstack([mine.piecearray, opp.piecearray])
 
-        if winner.value == self.player.value:
+        if winner == GameOutcome.DRAW:
+            value = 0
+        elif winner.value == self.player.value:
             value = 1
         else:
             value = -1
@@ -68,10 +70,11 @@ def parse_game(game_bytes: bytes) -> GameSummary:
     states: List[GameState] = []
 
     for move in moves:
-        states.append(GameState(board, player, move))
+        if move == Loc.pass_loc():
+            break
 
-        if move != Loc.pass_loc():
-            board = board.resolve_move(move, player)
+        states.append(GameState(board, player, move))
+        board = board.resolve_move(move, player)
 
         if board.has_moves(player.opponent):
             player = player.opponent
@@ -117,10 +120,7 @@ def make_dataset(
 @click.option("--out_dir", default="resources/wthor/preprocessed/")
 def main(wthor_glob: str, out_dir: str):
     logging.basicConfig(level=logging.INFO)
-    all_dir = os.path.join(out_dir, "all")
-    no_pass_dir = os.path.join(out_dir, "no_pass")
-    os.makedirs(all_dir, exist_ok=True)
-    os.makedirs(no_pass_dir, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
 
     db_files = glob(wthor_glob)
     boards: Union[List[np.ndarray], np.ndarray] = []
@@ -143,37 +143,20 @@ def main(wthor_glob: str, out_dir: str):
     boards = np.array(boards)
     moves = np.array(moves)
     values = np.array(values)
-    moves_int = moves[:, 0] + BOARD_SIZE * moves[:, 1]  # type: ignore
-    moves_onehot = to_categorical(moves_int)
 
-    np.save(os.path.join(all_dir, "boards.npy"), boards)
-    np.save(os.path.join(all_dir, "moves.npy"), moves)
-    np.save(os.path.join(all_dir, "moves_onehot.npy"), moves_onehot)
-    np.save(os.path.join(all_dir, "values.npy"), values)
-
-    logging.info("Writing all-states TFRecord")
-    ds = make_dataset(boards, moves, values)
-    writer = tf.data.experimental.TFRecordWriter(
-        os.path.join(all_dir, "wthor_all.tfrecord")
-    )
-    writer.write(ds)
-    del ds
-
-    legal_indices = np.where(moves[:, 0])
+    legal_indices = np.where(moves[:, 0] != -1)
     boards = boards[legal_indices]
     moves = moves[legal_indices]
-    moves_onehot = moves_onehot[legal_indices]
     values = values[legal_indices]
 
-    np.save(os.path.join(no_pass_dir, "boards.npy"), boards)
-    np.save(os.path.join(no_pass_dir, "moves.npy"), moves)
-    np.save(os.path.join(no_pass_dir, "moves_onehot.npy"), moves_onehot)
-    np.save(os.path.join(no_pass_dir, "values.npy"), values)
+    np.save(os.path.join(out_dir, "boards.npy"), boards)
+    np.save(os.path.join(out_dir, "moves.npy"), moves)
+    np.save(os.path.join(out_dir, "values.npy"), values)
 
-    logging.info("Writing no-pass TFRecord")
+    logging.info("Writing TFRecord")
     ds = make_dataset(boards, moves, values)
     writer = tf.data.experimental.TFRecordWriter(
-        os.path.join(no_pass_dir, "wthor_no_pass.tfrecord")
+        os.path.join(out_dir, "wthor.tfrecord")
     )
     writer.write(ds)
 
