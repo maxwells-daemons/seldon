@@ -2,6 +2,9 @@
 Wrapper code to make players compatible with Caltech's CS2 framework.
 A player should be configured with a "player config" file, which
 can be called as a script or embedded into C with `cython --embed`.
+
+By default, assumes the script is called just like the CS2 framework does, with a single
+argument specifying the color. Otherwise, color can be passed explicitly.
 """
 
 import sys
@@ -11,8 +14,9 @@ from board import Board, Loc, PlayerColor
 from player import PlayerABC
 
 
-def run_player(player: PlayerABC, **player_kwargs) -> None:
-    color = {"Black": PlayerColor.BLACK, "White": PlayerColor.WHITE}[sys.argv[1]]
+def run_player(player: PlayerABC, color: Optional[PlayerColor] = None) -> None:
+    if color is None:
+        color = {"Black": PlayerColor.BLACK, "White": PlayerColor.WHITE}[sys.argv[1]]
     board = Board.starting_board()
     print(f"Player ready: {player.__class__.__name__} ({color.value})")
 

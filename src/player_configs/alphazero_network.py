@@ -8,10 +8,11 @@ import tensorflow as tf  # type: ignore
 
 import src.cs2_wrapper  # type: ignore
 import src.players.alphazero.alphazero_player  # type: ignore
-from board import BOARD_SHAPE
+from board import BOARD_SHAPE, PlayerColor
 
 
 @click.command()
+@click.argument("color", type=click.Choice(["Black", "White"], case_sensitive=False))
 @click.option(
     "--network",
     type=click.Path(exists=True),
@@ -41,8 +42,9 @@ from board import BOARD_SHAPE
     "--buffer_time", type=int, default=80, help="Milliseconds to reserve each turn."
 )
 def main(
+    color: str,
     network: str,
-    C: float = 1.4,
+    c: float = 1.4,
     solver_depth: int = 18,
     solver_time: int = 5000,
     sims: int = 100,
@@ -56,13 +58,14 @@ def main(
         return policy, value[0, 0]
 
     player = src.players.alphazero.alphazero_player.AlphaZeroPlayer(
-        evaluator=network_evaluator, explore_coeff=C, finalized=True, sims_per_turn=sims
+        evaluator=network_evaluator, explore_coeff=c, finalized=True, sims_per_turn=sims
     )
 
     if solver_depth > 0:
         player = player.with_depth_solver(solver_depth, solver_time)
 
-    src.cs2_wrapper.run_player(player)
+    p_color = {"Black": PlayerColor.BLACK, "White": PlayerColor.WHITE}[color]
+    src.cs2_wrapper.run_player(player, color=p_color)
 
 
 if __name__ == "__main__":
