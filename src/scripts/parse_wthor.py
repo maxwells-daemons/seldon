@@ -7,16 +7,28 @@ import os
 from glob import glob
 from typing import List, NamedTuple, Tuple, Union
 
-import click
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
+from absl import app, flags  # type: ignore
 
+from alphazero.data import serialize_example
 from board import Bitboard, Board, GameOutcome, Loc, PlayerColor
-from data import serialize_example
 
 DB_HEADER_BYTES = 16
 GAME_BYTES = 68
 GAME_HEADER_BYTES = 8
+
+FLAGS = flags.FLAGS
+
+
+flags.DEFINE_string(
+    "wthor_glob",
+    "resources/wthor/game_data/*.wtb",
+    "Glob specifying wthor files to convert.",
+)
+flags.DEFINE_string(
+    "out_dir", "resources/wthor/preprocessed/", "Directory to dump output files."
+)
 
 
 class GameState(NamedTuple):
@@ -114,20 +126,17 @@ def make_dataset(
     return tf.data.Dataset.from_generator(gen, output_types=tf.string, output_shapes=())
 
 
-@click.command()
-@click.option("--wthor_glob", default="resources/wthor/game_data/*.wtb")
-@click.option("--out_dir", default="resources/wthor/preprocessed/")
-def main(wthor_glob: str, out_dir: str):
+def main(_):
     logging.basicConfig(level=logging.INFO)
-    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(FLAGS.out_dir, exist_ok=True)
 
-    db_files = glob(wthor_glob)
+    db_files = glob(FLAGS.wthor_glob)
     boards: Union[List[np.ndarray], np.ndarray] = []
     moves: Union[List[Tuple[int, int]], np.ndarray] = []
     values: Union[List[int], np.ndarray] = []
 
     logging.info(f"Reading files: {db_files}")
-    logging.info(f"Writing files to: {out_dir}")
+    logging.info(f"Writing files to: {FLAGS.out_dir}")
 
     for filename in db_files:
         games = parse_db(filename)
@@ -148,14 +157,14 @@ def main(wthor_glob: str, out_dir: str):
     moves = moves[legal_indices]
     values = values[legal_indices]
 
-    np.save(os.path.join(out_dir, "boards.npy"), boards)
-    np.save(os.path.join(out_dir, "moves.npy"), moves)
-    np.save(os.path.join(out_dir, "values.npy"), values)
+    np.save(os.path.join(FLAGS.out_dir, "boards.npy"), boards)
+    np.save(os.path.join(FLAGS.out_dir, "moves.npy"), moves)
+    np.save(os.path.join(FLAGS.out_dir, "values.npy"), values)
 
     logging.info("Writing TFRecord")
     ds = make_dataset(boards, moves, values)
     writer = tf.data.experimental.TFRecordWriter(
-        os.path.join(out_dir, "wthor.tfrecord")
+        os.path.join(FLAGS.out_dir, "wthor.tfrecord")
     )
     writer.write(ds)
 
@@ -163,4 +172,4 @@ def main(wthor_glob: str, out_dir: str):
 
 
 if __name__ == "__main__":
-    main()
+    app.run(main)
