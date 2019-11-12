@@ -4,6 +4,8 @@ resources/
 src/ccode/bitboard.c
 src/ccode/solver.c
 src/ccode/mcts_utils.c
+checkpoints/
+*.ipynb
 
 ### Framework
 OthelloFramework.jar

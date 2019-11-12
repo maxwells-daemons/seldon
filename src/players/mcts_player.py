@@ -9,8 +9,6 @@ from board import BOARD_SQUARES, Board, GameOutcome, Loc, PlayerColor
 from mcts_utils import random_rollout  # type: ignore
 from player import PlayerABC
 
-# TODO: debug mode
-
 DEFAULT_N_TRAVERSALS = 100
 
 

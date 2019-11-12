@@ -1,5 +1,6 @@
 import tensorflow as tf  # type: ignore
 import tensorflow.keras.layers as L  # type: ignore
+
 from board import BOARD_SIZE, BOARD_SQUARES
 
 
