@@ -2,6 +2,7 @@
 A wrapper for external players that conform to the CS2 standard.
 """
 
+import os
 import subprocess
 from typing import Optional
 
@@ -14,6 +15,7 @@ class ExternalPlayer(PlayerABC):
 
     def __init__(self, player_path: str):
         self.player_path = player_path
+        self.__class__.__name__ = os.path.basename(player_path)
 
     def initialize(self, color: PlayerColor, ms_total: Optional[int]) -> None:
         self.process = subprocess.Popen(
