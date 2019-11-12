@@ -18,6 +18,7 @@ def play_game_from_state(
     white: PlayerABC,
     black_time: Optional[int],
     white_time: Optional[int],
+    show_board: bool = False,
 ) -> GameOutcome:
     """
     Play a game of Othello between two players, starting from a given state.
@@ -74,6 +75,9 @@ def play_game_from_state(
             last_move = move
             board = board.resolve_move(move, current_player)
 
+        if show_board:
+            print(board)
+
         if times[current_player] is not None:
             times[current_player] -= int((t2 - t1) * 1000)  # type: ignore
             if times[current_player] < 0:  # type: ignore
@@ -82,11 +86,16 @@ def play_game_from_state(
 
         current_player = current_player.opponent
 
+    if show_board:
+        print(board)
     return board.winning_player
 
 
 def play_game(
-    black: PlayerABC, white: PlayerABC, max_time: Optional[int] = None
+    black: PlayerABC,
+    white: PlayerABC,
+    max_time: Optional[int] = None,
+    show_board: bool = False,
 ) -> GameOutcome:
     """
     Play a complete game of Othello between two players.
@@ -107,5 +116,11 @@ def play_game(
         The outcome of the game.
     """
     return play_game_from_state(
-        Board.starting_board(), PlayerColor.BLACK, black, white, max_time, max_time
+        Board.starting_board(),
+        PlayerColor.BLACK,
+        black,
+        white,
+        max_time,
+        max_time,
+        show_board,
     )
