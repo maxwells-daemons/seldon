@@ -11,17 +11,18 @@ from player import PlayerABC
 
 
 class ExternalPlayer(PlayerABC):
-    player_path: str
+    player_command: str
 
-    def __init__(self, player_path: str):
-        self.player_path = player_path
-        self.__class__.__name__ = os.path.basename(player_path)
+    def __init__(self, player_command: str):
+        self.player_command = player_command
+        self.__class__.__name__ = os.path.basename(player_command.split()[0])
 
     def initialize(self, color: PlayerColor, ms_total: Optional[int]) -> None:
         self.process = subprocess.Popen(
-            [self.player_path, color.value.capitalize()],
+            f"{self.player_command} {color.value.capitalize()}",
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            shell=True,
         )
         super().initialize(color, ms_total)
         self.logger.info(self.process.stdout.readline().decode("utf-8"))

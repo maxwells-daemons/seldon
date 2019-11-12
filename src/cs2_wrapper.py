@@ -21,7 +21,11 @@ def run_player(player: PlayerABC, color: Optional[PlayerColor] = None) -> None:
     print(f"Player ready: {player.__class__.__name__} ({color.value})")
 
     while True:
-        opp_x_, opp_y_, ms_left_ = input().split()
+        try:
+            opp_x_, opp_y_, ms_left_ = input().split()
+        except EOFError:
+            player.logger.info("Game over!")
+            return
         opp_x, opp_y = int(opp_x_), int(opp_y_)
         ms_left: Optional[int] = int(ms_left_)
         if ms_left == -1:
