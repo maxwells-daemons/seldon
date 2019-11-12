@@ -9,11 +9,10 @@ from typing import List, NamedTuple, Tuple, Union
 
 import click
 import numpy as np  # type: ignore
-
 import tensorflow as tf  # type: ignore
-from board import BOARD_SIZE, Bitboard, Board, GameOutcome, Loc, PlayerColor
+
+from board import Bitboard, Board, GameOutcome, Loc, PlayerColor
 from data import serialize_example
-from tensorflow.keras.utils import to_categorical  # type: ignore
 
 DB_HEADER_BYTES = 16
 GAME_BYTES = 68
